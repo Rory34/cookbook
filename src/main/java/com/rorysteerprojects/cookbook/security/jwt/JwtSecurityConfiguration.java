@@ -55,7 +55,9 @@ public class JwtSecurityConfiguration {
                 .authorizeHttpRequests(
                         auth ->
                                 auth.requestMatchers("/", //#CHANGE
-                                                "/authenticate", "/actuator", "/actuator/*")
+                                                "/authenticate",
+                                                "/register",
+                                                "/actuator", "/actuator/*")
                                         .permitAll()
                                         .requestMatchers("/h2-console/**")
                                         .permitAll()
@@ -80,34 +82,12 @@ public class JwtSecurityConfiguration {
     }
 
     @Bean
-    public DataSource dataSource() {
-        return new EmbeddedDatabaseBuilder()
-                .setType(EmbeddedDatabaseType.H2)
-                .addScript(DEFAULT_USER_SCHEMA_DDL_LOCATION)
-                .build();
-    }
-
-    @Bean
     public AuthenticationManager authenticationManager(
-            UserDetailsService userDetailsService) {
+            JwtUserDetailsService userDetailsService) {
         var authenticationProvider = new DaoAuthenticationProvider();
         authenticationProvider.setUserDetailsService(userDetailsService);
+        authenticationProvider.setPasswordEncoder(passwordEncoder());
         return new ProviderManager(authenticationProvider);
-    }
-
-    @Bean
-    public UserDetailsService userDetailsService() {
-        UserDetails user = User.withUsername("rory")
-                .password("{noop}dummy")
-                .authorities("read")
-                .roles("USER")
-                .build();
-
-        return new InMemoryUserDetailsManager(user);
-    }
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 
     @Bean
@@ -145,5 +125,10 @@ public class JwtSecurityConfiguration {
     @Bean
     public JwtEncoder jwtEncoder(JWKSource<SecurityContext> jwkSource) {
         return new NimbusJwtEncoder(jwkSource);
+    }
+
+    @Bean
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }
